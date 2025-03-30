@@ -1,10 +1,9 @@
 -----------------------------------------
--- Combined Script: PD + Reborn + Auto Set Character (Tốc độ nhanh, Dash Q)
+-- Combined Script: PD + Reborn + Auto Set Character (Phiên bản tốc độ cao)
 -----------------------------------------
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
@@ -26,11 +25,15 @@ notificationLabel.Visible = false
 local userToggle = false
 toggleButton.MouseButton1Click:Connect(function()
     userToggle = not userToggle
-    toggleButton.Text = userToggle and "ON" or "OFF"
+    if userToggle then
+       toggleButton.Text = "ON"
+    else
+       toggleButton.Text = "OFF"
+    end
 end)
 
 ------------------------------------------------
--- PHẦN 1: Check PD + Clan + Reset (tham khảo CHECK PD + CLAN + RESET.txt :contentReference[oaicite:0]{index=0}&#8203;:contentReference[oaicite:1]{index=1})
+-- PHẦN 1: Check PD + Clan + Reset (xem CHECK PD + CLAN + RESET.txt :contentReference[oaicite:0]{index=0}&#8203;:contentReference[oaicite:1]{index=1})
 ------------------------------------------------
 local legendaryClans = {"Yoshimura", "Washuu"}
 
@@ -81,19 +84,19 @@ local function tryResetIfNotLegendary()
             else
                 warn("⚠️ Không tìm thấy Humanoid.")
             end
-            return true
+            return true -- đã reset
         else
             warn("🌟 Clan Legendary! Không reset.")
-            return false
+            return false -- không reset
         end
     else
         warn("⏳ PD chưa active.")
-        return false
+        return false -- không active
     end
 end
 
 ------------------------------------------------
--- PHẦN 2: Reborn (tham khảo REBORN.txt :contentReference[oaicite:2]{index=2}&#8203;:contentReference[oaicite:3]{index=3})
+-- PHẦN 2: Reborn (xem REBORN.txt :contentReference[oaicite:2]{index=2}&#8203;:contentReference[oaicite:3]{index=3})
 ------------------------------------------------
 local TARGET_POS = Vector3.new(15281.845703, 8.999996, 1.378267)
 local STOP_DISTANCE = 5
@@ -103,25 +106,27 @@ local function performReborn()
     local humanoid = character:WaitForChild("Humanoid")
     local hrp = character:WaitForChild("HumanoidRootPart")
     local reached = false
-    
-    -- Sử dụng dash: spam phím Q sau khi định hướng nhân vật về phía tọa độ đích
+
+    -- Di chuyển đến vị trí TARGET
     task.spawn(function()
         while not reached do
             local distance = (hrp.Position - TARGET_POS).Magnitude
             if distance > STOP_DISTANCE then
-                hrp.CFrame = CFrame.new(hrp.Position, TARGET_POS)
-                VirtualInputManager:SendKeyEvent(true, "q", false, game)
-                VirtualInputManager:SendKeyEvent(false, "q", false, game)
-            else
-                reached = true
+                humanoid:MoveTo(TARGET_POS)
             end
-            task.wait(0.1)
+            task.wait(0.3)  -- giảm thời gian chờ giữa các lần MoveTo
         end
     end)
-    while not reached do task.wait(0.1) end
-    task.wait(0.3)
-    
-    -- Tương tác với NPC thông qua remote events (tốc độ nhanh hơn)
+    humanoid.MoveToFinished:Connect(function(success)
+        if success and (hrp.Position - TARGET_POS).Magnitude <= STOP_DISTANCE then
+            reached = true
+            print("[AUTO MOVE] Đã tới vị trí.")
+        end
+    end)
+    while not reached do task.wait() end
+    task.wait(0.5) -- giảm thời gian chờ sau khi đến vị trí
+
+    -- Tìm và kích hoạt Prompt gần (để tương tác NPC)
     local function firePromptNear()
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") and obj.Enabled then
@@ -210,7 +215,7 @@ local function performReborn()
 end
 
 ------------------------------------------------
--- PHẦN 3: Auto Set Character (tham khảo AUTO SET CHARACTER.txt :contentReference[oaicite:4]{index=4}&#8203;:contentReference[oaicite:5]{index=5})
+-- PHẦN 3: Auto Set Character (xem AUTO SET CHARACTER.txt :contentReference[oaicite:4]{index=4}&#8203;:contentReference[oaicite:5]{index=5})
 ------------------------------------------------
 local function autoSetCharacter()
     local playerGui = player:WaitForChild("PlayerGui")
@@ -224,63 +229,33 @@ local function autoSetCharacter()
 end
 
 ------------------------------------------------
--- Kiểm tra trạng thái sau chết (afterdead) và UI tạo nhân vật
-------------------------------------------------
-local function isAfterDead()
-    local character = player.Character
-    if not character then return true end
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if humanoid and humanoid.Health <= 0 then
-       return true
-    end
-    return false
-end
-
-local function isInCharacterCreation()
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if playerGui and playerGui:FindFirstChild("CUSTOMIZE") then
-        return true
-    end
-    return false
-end
-
-------------------------------------------------
--- Vòng lặp chính: Kiểm tra trạng thái và điều hướng các bước (afterdead → reborn → tạo nhân vật → PD)
+-- Vòng lặp chính: Kiểm tra điều kiện, thực hiện PD, reborn, auto set character rồi repeat
 ------------------------------------------------
 while true do
     if userToggle then
-        -- Nếu nhân vật đang ở trạng thái afterdead, thực hiện reborn trước
-        if isAfterDead() then
-            print("Player đang ở trạng thái afterdead, thực hiện reborn...")
-            performReborn()
-            autoSetCharacter()
-            player.CharacterAdded:Wait()
-            wait(0.5)
-        -- Nếu đang trong giao diện tạo nhân vật, tự động tạo nhân vật trước
-        elseif isInCharacterCreation() then
-            print("Đang ở giao diện tạo nhân vật, tự động set nhân vật...")
-            autoSetCharacter()
-            wait(0.5)
+        -- Kiểm tra trạng thái PD
+        if not isPDActive() then
+            notificationLabel.Text = "Server không có PD"
+            notificationLabel.Visible = true
+            print("Server không có PD. Chờ PD active...")
+            wait(2)  -- giảm thời gian chờ khi không có PD
+            notificationLabel.Visible = false
         else
-            if not isPDActive() then
-                notificationLabel.Text = "Server không có PD"
-                notificationLabel.Visible = true
-                print("Server không có PD. Chờ PD active...")
-                wait(2)
-                notificationLabel.Visible = false
-            else
-                notificationLabel.Visible = false
-                local didReset = tryResetIfNotLegendary()
-                if didReset then
-                    player.CharacterAdded:Wait()
-                    wait(0.5)
-                end
-                performReborn()
-                autoSetCharacter()
+            notificationLabel.Visible = false
+            -- Nếu PD active: thử reset nếu cần (nếu không phải clan Legendary)
+            local didReset = tryResetIfNotLegendary()
+            if didReset then
+                -- Chờ nhân vật respawn sau reset
+                player.CharacterAdded:Wait()
+                wait(0.5)
             end
+            -- Thực hiện reborn
+            performReborn()
+            -- Sau đó tự động set character
+            autoSetCharacter()
         end
     else
         print("Auto script is OFF")
     end
-    wait(2)
+    wait(2)  -- giảm thời gian chờ giữa các chu trình
 end
