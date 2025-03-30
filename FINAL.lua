@@ -33,9 +33,9 @@ toggleButton.MouseButton1Click:Connect(function()
 end)
 
 ------------------------------------------------
--- PHẦN 1: Check PD + Clan + Reset (xem CHECK PD + CLAN + RESET.txt :contentReference[oaicite:0]{index=0}&#8203;:contentReference[oaicite:1]{index=1})
+-- PHẦN 1:
 ------------------------------------------------
-local legendaryClans = {"Yoshimura", "Washuu"}
+local legendaryClans = {"Yoshimura", "Kaneki"}
 
 local function getCurrentClan()
     local entity = workspace:FindFirstChild("Entities") and workspace.Entities:FindFirstChild(player.Name)
@@ -96,7 +96,7 @@ local function tryResetIfNotLegendary()
 end
 
 ------------------------------------------------
--- PHẦN 2: Reborn (xem REBORN.txt :contentReference[oaicite:2]{index=2}&#8203;:contentReference[oaicite:3]{index=3})
+-- PHẦN 2:
 ------------------------------------------------
 local TARGET_POS = Vector3.new(15281.845703, 8.999996, 1.378267)
 local STOP_DISTANCE = 5
@@ -215,7 +215,7 @@ local function performReborn()
 end
 
 ------------------------------------------------
--- PHẦN 3: Auto Set Character (xem AUTO SET CHARACTER.txt :contentReference[oaicite:4]{index=4}&#8203;:contentReference[oaicite:5]{index=5})
+-- PHẦN 3:
 ------------------------------------------------
 local function autoSetCharacter()
     local playerGui = player:WaitForChild("PlayerGui")
