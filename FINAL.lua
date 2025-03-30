@@ -1,5 +1,5 @@
 -----------------------------------------
--- Combined Script: PD + Reborn + Auto Set Character (Phiên bản tốc độ cao)
+-- Combined Script: PD + Reborn + Auto Set Character
 -----------------------------------------
 
 local Players = game:GetService("Players")
@@ -108,13 +108,13 @@ local function performReborn()
     local reached = false
 
     -- Di chuyển đến vị trí TARGET
-    task.spawn(function()
+    spawn(function()
         while not reached do
             local distance = (hrp.Position - TARGET_POS).Magnitude
             if distance > STOP_DISTANCE then
                 humanoid:MoveTo(TARGET_POS)
             end
-            task.wait(0.3)  -- giảm thời gian chờ giữa các lần MoveTo
+            wait(0.5)
         end
     end)
     humanoid.MoveToFinished:Connect(function(success)
@@ -123,8 +123,8 @@ local function performReborn()
             print("[AUTO MOVE] Đã tới vị trí.")
         end
     end)
-    while not reached do task.wait() end
-    task.wait(0.5) -- giảm thời gian chờ sau khi đến vị trí
+    while not reached do wait() end
+    wait(1.5)
 
     -- Tìm và kích hoạt Prompt gần (để tương tác NPC)
     local function firePromptNear()
@@ -142,7 +142,7 @@ local function performReborn()
         return false
     end
     firePromptNear()
-    task.wait(0.3)
+    wait(1)
     
     local remote = ReplicatedStorage:WaitForChild("Bridgenet2Main"):WaitForChild("dataRemoteEvent")
     -- Remote Step 1
@@ -167,7 +167,7 @@ local function performReborn()
         },
         "\3"
     })
-    task.wait(0.3)
+    wait(1)
     -- Remote Step 2
     remote:FireServer({
         {
@@ -189,7 +189,7 @@ local function performReborn()
         },
         "\3"
     })
-    task.wait(0.3)
+    wait(1)
     -- Remote Step 3
     remote:FireServer({
         {
@@ -238,7 +238,7 @@ while true do
             notificationLabel.Text = "Server không có PD"
             notificationLabel.Visible = true
             print("Server không có PD. Chờ PD active...")
-            wait(2)  -- giảm thời gian chờ khi không có PD
+            wait(5)  -- Chờ trước khi kiểm tra lại
             notificationLabel.Visible = false
         else
             notificationLabel.Visible = false
@@ -247,7 +247,7 @@ while true do
             if didReset then
                 -- Chờ nhân vật respawn sau reset
                 player.CharacterAdded:Wait()
-                wait(0.5)
+                wait(1)
             end
             -- Thực hiện reborn
             performReborn()
@@ -257,5 +257,5 @@ while true do
     else
         print("Auto script is OFF")
     end
-    wait(2)  -- giảm thời gian chờ giữa các chu trình
+    wait(5)  -- Khoảng thời gian chờ giữa các chu trình
 end
