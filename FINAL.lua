@@ -1,5 +1,5 @@
 -----------------------------------------
--- Combined Script: PD + Reborn + Auto Set Character (Tốc độ cao, Instant Reset nếu không Legendary)
+-- Combined Script: PD + Reborn + Auto Set Character (Tốc độ nhanh, Dash Q)
 -----------------------------------------
 
 local Players = game:GetService("Players")
@@ -30,7 +30,7 @@ toggleButton.MouseButton1Click:Connect(function()
 end)
 
 ------------------------------------------------
--- PHẦN 1
+-- PHẦN 1: Check PD + Clan + Reset (tham khảo CHECK PD + CLAN + RESET.txt :contentReference[oaicite:0]{index=0}&#8203;:contentReference[oaicite:1]{index=1})
 ------------------------------------------------
 local legendaryClans = {"Yoshimura", "Washuu"}
 
@@ -69,26 +69,31 @@ local function isPDActive()
     return text and text:upper():find("DEATH AWAITS") ~= nil
 end
 
--- Khi PD active và nếu không thuộc clan Legendary thì reset ngay tức thời
 local function tryResetIfNotLegendary()
     if isPDActive() then
         print("💀 PD đang diễn ra...")
         if not isLegendaryClan() then
-            print("❌ Không phải clan Legendary → Tự sát ngay lập tức!")
-            player:LoadCharacter()  -- Reset nhân vật ngay lập tức
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Health = 0
+                warn("❌ Không phải clan Legendary → Đã tự sát để roll lại.")
+            else
+                warn("⚠️ Không tìm thấy Humanoid.")
+            end
             return true
         else
-            print("🌟 Clan Legendary! Không reset.")
+            warn("🌟 Clan Legendary! Không reset.")
             return false
         end
     else
-        print("⏳ PD chưa active.")
+        warn("⏳ PD chưa active.")
         return false
     end
 end
 
 ------------------------------------------------
--- PHẦN 2
+-- PHẦN 2: Reborn (tham khảo REBORN.txt :contentReference[oaicite:2]{index=2}&#8203;:contentReference[oaicite:3]{index=3})
 ------------------------------------------------
 local TARGET_POS = Vector3.new(15281.845703, 8.999996, 1.378267)
 local STOP_DISTANCE = 5
@@ -99,7 +104,7 @@ local function performReborn()
     local hrp = character:WaitForChild("HumanoidRootPart")
     local reached = false
     
-    -- Sử dụng dash bằng cách spam phím Q (sau khi định hướng nhân vật về hướng tọa độ đích)
+    -- Sử dụng dash: spam phím Q sau khi định hướng nhân vật về phía tọa độ đích
     task.spawn(function()
         while not reached do
             local distance = (hrp.Position - TARGET_POS).Magnitude
@@ -116,7 +121,7 @@ local function performReborn()
     while not reached do task.wait(0.1) end
     task.wait(0.3)
     
-    -- Tương tác với NPC (tốc độ nhanh)
+    -- Tương tác với NPC thông qua remote events (tốc độ nhanh hơn)
     local function firePromptNear()
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("ProximityPrompt") and obj.Enabled then
@@ -135,40 +140,67 @@ local function performReborn()
     task.wait(0.3)
     
     local remote = ReplicatedStorage:WaitForChild("Bridgenet2Main"):WaitForChild("dataRemoteEvent")
-    -- Các bước remote event
+    -- Remote Step 1
     remote:FireServer({
         {
             Message = "Oh, you have come koangu. What are you here for?",
             Choice = "I seek a new start.",
             Name = "???",
-            Choices = {"I seek a new start.", "I should go.", "I want to go back."},
-            Properties = {RegularDelay = 0.02, DotDelay = 0, Name = "?", Sound = "rbxassetid://6929790120"},
+            Choices = {
+                "I seek a new start.",
+                "I should go.",
+                "I want to go back."
+            },
+            Properties = {
+                RegularDelay = 0.02,
+                DotDelay = 0,
+                Name = "?",
+                Sound = "rbxassetid://6929790120"
+            },
             Part = 1,
             NPCName = ""
         },
         "\3"
     })
     task.wait(0.3)
+    -- Remote Step 2
     remote:FireServer({
         {
             Message = "Do you seek a new beginning, or perhaps do you seek something else?",
             Choice = "Im ready for a new beginning.",
             Name = "???",
-            Choices = {"Im ready for a new beginning.", "I'm not too sure."},
-            Properties = {RegularDelay = 0.02, DotDelay = 0, Name = "?", Sound = "rbxassetid://6929790120"},
+            Choices = {
+                "Im ready for a new beginning.",
+                "I'm not too sure."
+            },
+            Properties = {
+                RegularDelay = 0.02,
+                DotDelay = 0,
+                Name = "?",
+                Sound = "rbxassetid://6929790120"
+            },
             Part = 2,
             NPCName = ""
         },
         "\3"
     })
     task.wait(0.3)
+    -- Remote Step 3
     remote:FireServer({
         {
             Message = "Very well... But know this: once your past is erased, theres no going back.",
             Choice = "I accept my fate.",
             Name = "???",
-            Choices = {"I accept my fate.", "Wait, Im not sure."},
-            Properties = {RegularDelay = 0.02, DotDelay = 0, Name = "?", Sound = "rbxassetid://6929790120"},
+            Choices = {
+                "I accept my fate.",
+                "Wait, Im not sure."
+            },
+            Properties = {
+                RegularDelay = 0.02,
+                DotDelay = 0,
+                Name = "?",
+                Sound = "rbxassetid://6929790120"
+            },
             Part = 3,
             NPCName = ""
         },
@@ -178,81 +210,77 @@ local function performReborn()
 end
 
 ------------------------------------------------
--- PHẦN 3
+-- PHẦN 3: Auto Set Character (tham khảo AUTO SET CHARACTER.txt :contentReference[oaicite:4]{index=4}&#8203;:contentReference[oaicite:5]{index=5})
 ------------------------------------------------
 local function autoSetCharacter()
     local playerGui = player:WaitForChild("PlayerGui")
     local customizeGui = playerGui:WaitForChild("CUSTOMIZE")
     local remoteEvent = customizeGui:WaitForChild("RemoteEvent")
-    local gender = "Female"  -- Đổi thành "Male" nếu muốn
-    local race = "Ghoul"     -- Đổi chủng tộc nếu muốn
-    local name = "Kuronaai"  -- Đổi tên theo ý bạn
+    local gender = "Female"       -- Đổi thành "Male" nếu muốn
+    local race = "Ghoul"          -- Đổi chủng tộc nếu muốn
+    local name = "Kuronaai"       -- Đổi tên theo ý bạn
     remoteEvent:FireServer(gender, race, name)
     print("✅ Đã gửi yêu cầu tạo nhân vật:", gender, race, name)
 end
 
 ------------------------------------------------
--- Kiểm tra trạng thái sau chết (afterdead) và trạng thái tạo nhân vật
+-- Kiểm tra trạng thái sau chết (afterdead) và UI tạo nhân vật
 ------------------------------------------------
 local function isAfterDead()
     local character = player.Character
     if not character then return true end
     local humanoid = character:FindFirstChildOfClass("Humanoid")
-    return (humanoid and humanoid.Health <= 0) or false
+    if humanoid and humanoid.Health <= 0 then
+       return true
+    end
+    return false
 end
 
 local function isInCharacterCreation()
     local playerGui = player:FindFirstChild("PlayerGui")
-    return playerGui and playerGui:FindFirstChild("CUSTOMIZE") and true or false
+    if playerGui and playerGui:FindFirstChild("CUSTOMIZE") then
+        return true
+    end
+    return false
 end
 
 ------------------------------------------------
--- Vòng lặp chính: Kiểm tra trạng thái và thực hiện các bước theo thứ tự (afterdead → reborn → tạo nhân vật → PD)
+-- Vòng lặp chính: Kiểm tra trạng thái và điều hướng các bước (afterdead → reborn → tạo nhân vật → PD)
 ------------------------------------------------
 while true do
     if userToggle then
+        -- Nếu nhân vật đang ở trạng thái afterdead, thực hiện reborn trước
         if isAfterDead() then
-            print("Player ở trạng thái afterdead, thực hiện reborn...")
+            print("Player đang ở trạng thái afterdead, thực hiện reborn...")
             performReborn()
             autoSetCharacter()
             player.CharacterAdded:Wait()
-            task.wait(0.1)
+            wait(0.5)
+        -- Nếu đang trong giao diện tạo nhân vật, tự động tạo nhân vật trước
         elseif isInCharacterCreation() then
             print("Đang ở giao diện tạo nhân vật, tự động set nhân vật...")
             autoSetCharacter()
-            task.wait(0.1)
-            -- Sau khi tạo, nếu không phải clan Legendary thì reset ngay
-            if not isLegendaryClan() then
-                print("Không phải clan Legendary, reset ngay!")
-                player:LoadCharacter()
-                player.CharacterAdded:Wait()
-            end
+            wait(0.5)
         else
             if not isPDActive() then
                 notificationLabel.Text = "Server không có PD"
                 notificationLabel.Visible = true
                 print("Server không có PD. Chờ PD active...")
-                task.wait(2)
+                wait(2)
                 notificationLabel.Visible = false
             else
                 notificationLabel.Visible = false
                 local didReset = tryResetIfNotLegendary()
                 if didReset then
                     player.CharacterAdded:Wait()
-                    task.wait(0.1)
+                    wait(0.5)
                 end
                 performReborn()
                 autoSetCharacter()
-                -- Kiểm tra ngay sau tạo nhân vật, nếu không phải clan Legendary thì reset tức thì
-                if not isLegendaryClan() then
-                    print("Không phải clan Legendary, reset ngay sau tạo nhân vật!")
-                    player:LoadCharacter()
-                    player.CharacterAdded:Wait()
-                end
             end
         end
     else
         print("Auto script is OFF")
     end
-    task.wait(2)
+    wait(2)
 end
